@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Publications</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2em;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      color: #333;
+    }
+    .controls {
+      margin-bottom: 1em;
+    }
+    .paper {
+      margin-bottom: 1.5em;
+      padding: 1em;
+      background: #fff;
+      border-left: 5px solid #0073e6;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .title a {
+      font-size: 1.2em;
+      font-weight: bold;
+      color: #0073e6;
+      text-decoration: none;
+    }
+    .meta {
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <h1>Publications</h1>
+  <div class="controls">
+    <label for="yearSelect">Selecione o ano: </label>
+    <select id="yearSelect"></select>
+  </div>
+  <div id="results">Carregando...</div>
+
+  <script>
+    const nomesDestacados = [
+      "Gustavo Burdman", "Renata Zukanovich Funchal", "Oscar Eboli", "O. J. P. Eboli",
+      "Gustavo F. S. Alves", "Matheus Martines", "Luighi P. S. Leal", "L.P. Santos Leal",
+      "L. P. Santos Leal", "L. P. S. Leal", "Peter Reimitz", "Ana Luisa Foguel",
+      "Gabriel M. Salla", "Enrico Bertuzzo", "Oscar J. P. Éboli", "Lucas Magno D. Ramos",
+      "Gustavo S.S. Sakoda", "G.S.S. Sakoda", "Disha Bhatia", "Sujay Shil",
+      "Rafiqul Rahaman", "Barbara Amaral", "Eduardo Casali", "Elisa G.M. Ferreira",
+      "Frederique Grassi", "J.C.A. Barata", "João C. A. Barata", "Joao C. A. Barata",
+      "L.R.W.Abramo", "L. Raul Abramo", "R. Abramo", "Raul Abramo", "Natália V.N. Rodrigues",
+      "Marcos Lima", "Matthew Luzum", "Luis Raul Abramo", "João Vitor Dinarte Ferri",
+      "Igor Neiva Mesquita", "Álvaro S. de Jesus", "Á.S. de Jesus", "Naim Elias Comar",
+      "Alisson Tezzin", "Ian Tashiro", "Kevin Pala", "Pedro Ishida", "Luis F. Santos",
+      "Gabriel Menezes"
+    ];
+
+    const resultsDiv = document.getElementById("results");
+    const yearSelect = document.getElementById("yearSelect");
+
+    function deveDestacarAutor(nomeAutor) {
+      return nomesDestacados.some(autor => autor.toLowerCase() === nomeAutor.toLowerCase());
+    }
+
+    function popularAnos() {
+      const anoAtual = new Date().getFullYear();
+      for (let ano = anoAtual; ano >= 2000; ano--) {
+        const option = document.createElement("option");
+        option.value = ano;
+        option.textContent = ano;
+        yearSelect.appendChild(option);
+      }
+    }
+
+    async function carregarResultados(anoSelecionado) {
+      resultsDiv.innerHTML = "Carregando...";
+      const autoresQuery = nomesDestacados.map(nome => `au:"${nome}"`).join("+OR+");
+      const dataInicio = `${anoSelecionado}01010000`;
+      const dataFim = `${anoSelecionado}12312359`;
+      const url = `https://export.arxiv.org/api/query?search_query=(${autoresQuery})+AND+submittedDate:[${dataInicio}+TO+${dataFim}]&sortBy=submittedDate&sortOrder=descending&max_results=100`;
+
+      try {
+        const response = await fetch(url);
+        const xmlText = await response.text();
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(xmlText, "application/xml");
+
+        const entries = xml.querySelectorAll("entry");
+        if (entries.length === 0) {
+          resultsDiv.innerHTML = "Nenhum resultado encontrado.";
+          return;
+        }
+
+        let html = "";
+        entries.forEach(entry => {
+          const title = entry.querySelector("title")?.textContent.trim() || "Sem título";
+          const link = entry.querySelector("id")?.textContent || "#";
+          const authors = Array.from(entry.querySelectorAll("author > name")).map(a => a.textContent.trim());
+          const published = entry.querySelector("published")?.textContent.slice(0, 10) || "Sem data";
+          const journalRef = entry.querySelector("arxiv\\:journal_ref")?.textContent.trim() || "";
+          const doi = entry.querySelector("arxiv\\:doi")?.textContent.trim() || "";
+
+          const destacados = [];
+          const outros = [];
+
+          authors.forEach(nome => {
+            if (deveDestacarAutor(nome)) {
+              destacados.push(`<strong>${nome}</strong>`);
+            } else {
+              outros.push(nome);
+            }
+          });
+
+          const authorsHTML = [...destacados, ...outros].join(", ");
+
+          const publicado = (journalRef || doi) ? "Sim" : "Não";
+
+          html += `
+            <div class="paper">
+              <div class="title"><a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a></div>
+              <div class="meta">Autores: ${authorsHTML}</div>
+              <div class="meta">Publicado em: ${published}</div>
+              <div class="meta">Publicado em periódico: ${publicado}</div>
+            </div>
+          `;
+        });
+
+        resultsDiv.innerHTML = html;
+      } catch (error) {
+        resultsDiv.innerHTML = "Erro ao carregar os dados: " + error.message;
+      }
+    }
+
+    yearSelect.addEventListener("change", () => {
+      const anoSelecionado = yearSelect.value;
+      if (anoSelecionado) {
+        carregarResultados(anoSelecionado);
+      }
+    });
+
+    // Inicialização
+    popularAnos();
+    yearSelect.value = new Date().getFullYear();
+    carregarResultados(yearSelect.value);
+  </script>
+</body>
+</html>
