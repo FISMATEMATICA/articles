@@ -2,43 +2,69 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Publications</title>
+  <title>Publications 2025</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      margin: 2em;
-      background-color: #f9f9f9;
-    }
-    h1 {
+      font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      background-color: #f7f9fc;
       color: #333;
     }
-    .controls {
-      margin-bottom: 1em;
+
+    header {
+      background-color: #004d4d; /* azul petróleo */
+      padding: 2em;
+      text-align: center;
     }
+
+    header h1 {
+      color: #ffffff;
+      font-size: 2.5em;
+      margin: 0;
+    }
+
+    #results {
+      max-width: 900px;
+      margin: 2em auto;
+      padding: 0 1em;
+    }
+
     .paper {
       margin-bottom: 1.5em;
-      padding: 1em;
-      background: #fff;
-      border-left: 5px solid #0073e6;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      padding: 1.2em;
+      background: #ffffff;
+      border-left: 6px solid #004d4d;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.2s ease;
     }
+
+    .paper:hover {
+      transform: translateY(-2px);
+    }
+
     .title a {
       font-size: 1.2em;
       font-weight: bold;
-      color: #0073e6;
+      color: #004d4d; /* azul petróleo */
       text-decoration: none;
     }
+
+    .title a:hover {
+      text-decoration: underline;
+    }
+
     .meta {
+      margin-top: 0.5em;
       color: #555;
+      font-size: 0.95em;
     }
   </style>
 </head>
 <body>
-  <h1>Publications</h1>
-  <div class="controls">
-    <label for="yearSelect">Selecione o ano: </label>
-    <select id="yearSelect"></select>
-  </div>
+  <header>
+    <h1>Publications 2025</h1>
+  </header>
   <div id="results">Carregando...</div>
 
   <script>
@@ -46,7 +72,7 @@
       "Gustavo Burdman", "Renata Zukanovich Funchal", "Oscar Eboli", "O. J. P. Eboli",
       "Gustavo F. S. Alves", "Matheus Martines", "Luighi P. S. Leal", "L.P. Santos Leal",
       "L. P. Santos Leal", "L. P. S. Leal", "Peter Reimitz", "Ana Luisa Foguel",
-      "Gabriel M. Salla", "Enrico Bertuzzo", "Oscar J. P. Éboli", "Lucas Magno D. Ramos",
+      "Gabriel M. Salla", "Oscar J. P. Éboli", "Lucas Magno D. Ramos",
       "Gustavo S.S. Sakoda", "G.S.S. Sakoda", "Disha Bhatia", "Sujay Shil",
       "Rafiqul Rahaman", "Barbara Amaral", "Eduardo Casali", "Elisa G.M. Ferreira",
       "Frederique Grassi", "J.C.A. Barata", "João C. A. Barata", "Joao C. A. Barata",
@@ -54,32 +80,19 @@
       "Marcos Lima", "Matthew Luzum", "Luis Raul Abramo", "João Vitor Dinarte Ferri",
       "Igor Neiva Mesquita", "Álvaro S. de Jesus", "Á.S. de Jesus", "Naim Elias Comar",
       "Alisson Tezzin", "Ian Tashiro", "Kevin Pala", "Pedro Ishida", "Luis F. Santos",
-      "Gabriel Menezes"
+      "Luís F. Santos", "L. R. Abramo", "O. J. P. Éboli", "Bárbara Amaral", 
+      "R. Zukanovich Funchal", "Pedro Bittar"
     ];
 
     const resultsDiv = document.getElementById("results");
-    const yearSelect = document.getElementById("yearSelect");
 
     function deveDestacarAutor(nomeAutor) {
       return nomesDestacados.some(autor => autor.toLowerCase() === nomeAutor.toLowerCase());
     }
 
-    function popularAnos() {
-      const anoAtual = new Date().getFullYear();
-      for (let ano = anoAtual; ano >= 2000; ano--) {
-        const option = document.createElement("option");
-        option.value = ano;
-        option.textContent = ano;
-        yearSelect.appendChild(option);
-      }
-    }
-
-    async function carregarResultados(anoSelecionado) {
-      resultsDiv.innerHTML = "Carregando...";
-      const autoresQuery = nomesDestacados.map(nome => `au:"${nome}"`).join("+OR+");
-      const dataInicio = `${anoSelecionado}01010000`;
-      const dataFim = `${anoSelecionado}12312359`;
-      const url = `https://export.arxiv.org/api/query?search_query=(${autoresQuery})+AND+submittedDate:[${dataInicio}+TO+${dataFim}]&sortBy=submittedDate&sortOrder=descending&max_results=100`;
+    async function carregarResultados() {
+      const autores = nomesDestacados.map(nome => `au:"${nome.replace(/ /g, "+")}"`).join("+OR+");
+      const url = `https://export.arxiv.org/api/query?search_query=${autores}&sortBy=submittedDate&sortOrder=descending&max_results=100`;
 
       try {
         const response = await fetch(url);
@@ -99,52 +112,42 @@
           const link = entry.querySelector("id")?.textContent || "#";
           const authors = Array.from(entry.querySelectorAll("author > name")).map(a => a.textContent.trim());
           const published = entry.querySelector("published")?.textContent.slice(0, 10) || "Sem data";
-          const journalRef = entry.querySelector("arxiv\\:journal_ref")?.textContent.trim() || "";
 
-          const destacados = [];
-          const outros = [];
+          if (!published.startsWith("2025")) return;
 
-          authors.forEach(nome => {
-            if (deveDestacarAutor(nome)) {
-              destacados.push(`<strong>${nome}</strong>`);
-            } else {
-              outros.push(nome);
-            }
-          });
+          const journalRef = entry.querySelector("arxiv\\:journal_ref, journal_ref");
+          const journal = journalRef ? journalRef.textContent.trim() : "";
 
-          const todosAutores = [...destacados, ...outros];
-          let autoresHTML = todosAutores.slice(0, 5).join(", ");
-          if (todosAutores.length > 5) {
-            autoresHTML += ", et al.";
+          const autoresDestacados = authors.filter(nome => deveDestacarAutor(nome));
+          const autoresNaoDestacados = authors.filter(nome => !deveDestacarAutor(nome));
+          const autoresOrdenados = [...autoresDestacados, ...autoresNaoDestacados];
+
+          let autoresExibidos = autoresOrdenados.slice(0, 8);
+          if (autoresOrdenados.length > 8) {
+            autoresExibidos.push("et al.");
           }
+
+          const authorsHTML = autoresExibidos.map(nome =>
+            deveDestacarAutor(nome) ? `<strong>${nome}</strong>` : nome
+          ).join(", ");
 
           html += `
             <div class="paper">
               <div class="title"><a href="${link}" target="_blank" rel="noopener noreferrer">${title}</a></div>
-              <div class="meta">Autores: ${autoresHTML}</div>
+              <div class="meta">Autores: ${authorsHTML}</div>
               <div class="meta">Publicado em: ${published}</div>
-              ${journalRef ? `<div class="meta">Referência do periódico: ${journalRef}</div>` : ""}
+              ${journal ? `<div class="meta">${journal}</div>` : ""}
             </div>
           `;
         });
 
-        resultsDiv.innerHTML = html;
+        resultsDiv.innerHTML = html || "Nenhum artigo de 2025 encontrado.";
       } catch (error) {
         resultsDiv.innerHTML = "Erro ao carregar os dados: " + error.message;
       }
     }
 
-    yearSelect.addEventListener("change", () => {
-      const anoSelecionado = yearSelect.value;
-      if (anoSelecionado) {
-        carregarResultados(anoSelecionado);
-      }
-    });
-
-    // Inicialização
-    popularAnos();
-    yearSelect.value = new Date().getFullYear();
-    carregarResultados(yearSelect.value);
+    carregarResultados();
   </script>
 </body>
 </html>
